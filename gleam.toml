@@ -1,0 +1,37 @@
+name = "kimi_proxy"
+version = "0.2.0"
+description = "OpenAI-compatible local proxy (Gleam / BEAM) with dual-brain routing and Obsidian vault memory"
+target = "erlang"
+licences = ["MIT"]
+repository = { type = "github", user = "YOUR_GITHUB_USER", repo = "kimi_proxy" }
+# homepage = "https://github.com/YOUR_GITHUB_USER/kimi_proxy"
+# links = [{ title = "Website", href = "https://github.com/YOUR_GITHUB_USER/kimi_proxy" }]
+
+# Spec §A.9 targets Gleam 1.16; toolchain confirmed at 1.16.0 on this machine.
+gleam = ">= 1.16.0"
+
+# Dependencies are introduced incrementally per build phase (spec §16). Phase 1:
+# stdlib + simplifile + envoy. Phase 2 (memory): birl (session-log dates §19.1).
+# Phase 4 (provider): shellout + gleam_http/gleam_httpc + gleam_json.
+# Phase 5 (HTTP server): wisp + mist.
+#
+# NOTE (rule #6): the spec's gleam_http/gleam_httpc "< 5.0.0" caps resolve to a
+# 4.x whose code uses `result.then`, which gleam_stdlib 1.0.3 removed — that
+# combination fails to compile. We drop the caps so the resolver can pick
+# `result.try`-based releases that build against the current stdlib (gleam_httpc
+# resolves to 5.0.0). Same reasoning keeps wisp/mist caps loose.
+[dependencies]
+gleam_stdlib = ">= 0.50.0 and < 2.0.0"
+gleam_erlang = ">= 1.0.0"
+simplifile = ">= 2.0.0 and < 3.0.0"
+envoy = ">= 1.0.0 and < 2.0.0"
+birl = ">= 1.6.0 and < 2.0.0"
+shellout = ">= 1.6.0 and < 2.0.0"
+gleam_http = ">= 4.0.0"
+gleam_httpc = ">= 4.0.0"
+gleam_json = ">= 3.0.0 and < 4.0.0"
+wisp = ">= 1.0.0"
+mist = ">= 4.0.0"
+
+[dev-dependencies]
+gleeunit = ">= 1.0.0 and < 2.0.0"

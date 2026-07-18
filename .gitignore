@@ -1,0 +1,21 @@
+# Gleam build output
+/build/
+
+# Environment variables
+.env
+.env.local
+
+# Erlang crash dumps
+erl_crash.dump
+
+# Erlang archives
+*.ez
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

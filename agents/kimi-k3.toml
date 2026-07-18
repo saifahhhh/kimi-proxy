@@ -1,0 +1,33 @@
+# kimi-cli config for the proxy's Coder role: pin Kimi K3.
+#
+# Passed via `--config-file` by kimi_proxy (config.default_kimi_cli), so it only
+# affects proxy calls — your personal ~/.kimi/config.toml is untouched.
+# NOTE: kimi-cli REPLACES its config with this file (no merge, verified
+# 2026-07-11 on the K2.7 pin), so the provider + oauth sections must be repeated
+# here. The oauth block only references the shared credential store — no secrets
+# live in this file.
+#
+# max_context_size is carried over from the K2.7 pin — adjust if K3's window
+# differs (check `Using LLM model:` in ~/.kimi/logs/kimi.log after a real call).
+
+default_model = "kimi-code/kimi-k3"
+# Thinking ON for the Coder: plan-following (the [HANDOFF] steps) needs
+# reasoning; K3 with thinking off was observed drifting from Opus plans
+# (2026-07-18). Trade-off: slower replies. Rollback: set false.
+default_thinking = true
+
+[models."kimi-code/kimi-k3"]
+provider = "managed:kimi-code"
+model = "kimi-k3"
+max_context_size = 262144
+capabilities = ["thinking"]
+display_name = "kimi-k3"
+
+[providers."managed:kimi-code"]
+type = "kimi"
+base_url = "https://api.kimi.com/coding/v1"
+api_key = ""
+
+[providers."managed:kimi-code".oauth]
+storage = "file"
+key = "oauth/kimi-code"

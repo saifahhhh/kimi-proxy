@@ -1,0 +1,6 @@
+- AC: มี form => <form
+- AC: มี input password => type=["']?password
+- AC: มี input email => type=["']?email
+- AC: มีปุ่ม submit => <button|type=["']?submit
+- AC: มี styling ในไฟล์ => <style|style=
+- AC: มี error state => error

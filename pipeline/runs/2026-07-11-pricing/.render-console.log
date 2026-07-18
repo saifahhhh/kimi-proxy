@@ -1,0 +1,4 @@
+[30784:1091004:0711/140209.896934:INFO:components/enterprise/browser/controller/chrome_browser_cloud_management_controller.cc:239] No machine level policy manager exists.
+[30784:1091069:0711/140209.939565:WARNING:chrome/browser/extensions/external_pref_loader.cc:294] You are using an old-style extension deployment method (external_extensions.json), which will soon be deprecated. (see http://developer.chrome.com/docs/extensions/how-to/distribute/install-extensions)
+[30794:1091128:0711/140211.905324:WARNING:net/extras/sqlite/sqlite_persistent_store_backend_base.cc:179] Failed to post task from FlushAndNotifyInBackground@net/extras/sqlite/sqlite_persistent_store_backend_base.cc:229 to client_task_runner_.
+[30794:1091128:0711/140211.905549:WARNING:net/extras/sqlite/sqlite_persistent_store_backend_base.cc:179] Failed to post task from FlushAndNotifyInBackground@net/extras/sqlite/sqlite_persistent_store_backend_base.cc:229 to client_task_runner_.

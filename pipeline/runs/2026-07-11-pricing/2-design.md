@@ -1,0 +1,77 @@
+[33mWarning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.[39m
+## Design Tokens
+
+- **palette:**
+  - background gradient: `#0F172A → #1E3A5F → #0E7490` (135°) เต็ม viewport
+  - surface (card): `#FFFFFF`
+  - primary: `#0E7490` · primary-hover: `#155E75` · primary-disabled: `#94A3B8`
+  - text: `#0F172A` · muted: `#64748B` · muted-on-dark (คำโปรยบนพื้น gradient): `#CBD5E1`
+  - border: `#CBD5E1` · border-focus: `#0E7490`
+  - success: `#15803D` · success-bg: `#F0FDF4`
+  - (error/error-bg มีใน system แต่หน้านี้ไม่ใช้ — ไม่มี state ผิดพลาด)
+- **typography:**
+  - font stack: `'Noto Sans Thai', 'Sarabun', -apple-system, 'Segoe UI', Roboto, sans-serif` — โหลด Google Fonts น้ำหนัก 400/500/700 เท่านั้น
+  - heading หน้า "แผนราคา": 24px/700 สีขาว · คำโปรย: 14px/400 muted-on-dark
+  - ชื่อแผน: 20px/700 text · ตัวเลขราคา: 32px/700 text · หน่วยราคา ("/เดือน", "/ปี"): 14px/400 muted
+  - รายการฟีเจอร์ / ปุ่ม: 16px (ปุ่มน้ำหนัก 500) · badge "แนะนำ": 13px/500
+  - line-height: 1.5 ทั้งหน้า (ห้ามต่ำกว่า — ตัวไทยมีสระบน-ล่าง)
+- **spacing:** scale 4 / 8 / 12 / 16 / 24 / 32 px — padding card 32px (จอ ≤360px ลดเป็น 20px), ช่องว่างระหว่าง card 24px, ระยะหัวข้อ→คำโปรย 8px, คำโปรย→toggle 24px, toggle→แถว card 32px
+- **radius / shadow:**
+  - radius: card 16px · ปุ่ม/toggle 8px · badge 999px (pill)
+  - shadow card: `0 20px 40px rgba(15, 23, 42, 0.25)`
+  - focus ring (ทุก interactive element, ใช้กับ `:focus-visible`): `0 0 0 3px rgba(14, 116, 144, 0.25)`
+
+## Layout
+
+หน้าเดียว เนื้อหากึ่งกลางแนวนอนบนพื้น gradient เต็ม viewport (`min-height: 100vh`), เรียงบนลงล่าง มี padding แนวตั้ง 32px และ margin ข้างขั้นต่ำ 16px กันชนขอบ (รองรับ ≥320px):
+
+1. **Heading** "แผนราคา" — 24px/700 สีขาว, กึ่งกลาง
+2. ห่างลงมา 8px — **คำโปรย** "เลือกแผนที่เหมาะกับทีมของคุณ เริ่มฟรี อัปเกรดได้ทุกเมื่อ" — 14px muted-on-dark `#CBD5E1`, กึ่งกลาง
+3. ห่างลงมา 24px — **toggle รายเดือน/รายปี** — ปุ่มคู่ติดกันกึ่งกลางจอ (รายละเอียดใน Components)
+4. ห่างลงมา 32px — **แถว pricing cards 3 ใบ** เรียง Starter → Pro → Enterprise:
+   - ≥900px: grid 3 คอลัมน์ gap 24px, การ์ดกว้างสูงสุดใบละ 340px, ชิดบนเท่ากัน (ความสูงเท่ากันด้วย stretch, ปุ่ม CTA ดันชิดล่างของ card เสมอ)
+   - <900px: stack คอลัมน์เดียว gap 24px, การ์ดกว้างเต็มแถวแต่ไม่เกิน 340px กึ่งกลาง
+   - ≤360px: padding ภายใน card ลดจาก 32px → 20px
+
+**โครงภายใน card แต่ละใบ** (บนลงล่าง, ชิดซ้าย):
+ชื่อแผน (20px/700) → 12px → บล็อกราคา (ตัวเลข 32px/700 + หน่วย 14px muted ต่อท้ายบรรทัดเดียวกัน; Enterprise ไม่มีตัวเลข ใช้ข้อความ "ราคาตามการใช้งาน" 16px/500 text แทน) → 16px → เส้นคั่น 1px สี border → 16px → รายการฟีเจอร์ → 24px → ปุ่ม CTA เต็มความกว้าง (Enterprise มีบรรทัดยืนยันใต้ปุ่มเมื่อ success)
+
+## Components
+
+- **Toggle รายเดือน/รายปี** — ปุ่มคู่ 2 ตัว (`<button>`) ในกล่องพื้นขาว radius 8px padding 4px, ปุ่มละสูง 40px padding แนวนอน 16px radius 8px ตัวอักษร 16px/500
+  - ป้าย: "รายเดือน" · "รายปี (ลด 20%)"
+  - active: พื้น primary `#0E7490` ตัวขาว · inactive: พื้นโปร่ง ตัว text `#0F172A`
+  - hover ปุ่ม inactive: ตัวเปลี่ยนเป็น primary · focus-visible: focus ring ตาม token · ใส่ `aria-pressed` ตามสถานะ
+
+- **Pricing card** — พื้นขาว, radius 16px, shadow ตาม token, padding 32px (≤360px → 20px), กว้างสูงสุด 340px
+  - **Starter:** ราคา ฿0 /เดือน (รายปีก็ ฿0 /ปี) · ฟีเจอร์ 4 ข้อ: "ผู้ใช้ 1 คน", "แดชบอร์ด 1 ชุด", "ประวัติข้อมูลย้อนหลัง 7 วัน", "ซัพพอร์ตผ่านอีเมล"
+  - **Pro (แผนแนะนำ):** ขอบ 2px primary `#0E7490` · **badge "แนะนำ"** — pill พื้น primary ตัวขาว 13px/500 padding 4px 12px, วางกึ่งกลางคร่อมขอบบนของ card · ราคา ฿990 /เดือน (รายปี ฿9,504 /ปี = 990×12×0.8) · ฟีเจอร์ 5 ข้อ: "ผู้ใช้สูงสุด 10 คน", "แดชบอร์ดไม่จำกัด", "ประวัติข้อมูลย้อนหลัง 1 ปี", "ส่งออกรายงาน PDF/Excel", "ซัพพอร์ตแบบเร่งด่วน"
+  - **Enterprise:** ข้อความราคา "ราคาตามการใช้งาน" (ไม่เปลี่ยนตาม toggle) · ฟีเจอร์ 5 ข้อ: "ผู้ใช้ไม่จำกัด", "ทุกฟีเจอร์ของ Pro", "SSO และสิทธิ์ตามบทบาท", "SLA รับประกัน 99.9%", "ผู้ดูแลบัญชีเฉพาะทีม"
+  - หมายเหตุถึง Dev: ชื่อแผนใน markup ต้องเป็น element ครอบข้อความล้วน เช่น `<h2>Pro</h2>` (AC grep หา `>Pro<`)
+
+- **รายการฟีเจอร์** — `<ul>` ไม่มี bullet, แต่ละข้อ 16px text, ระยะห่างระหว่างข้อ 12px, นำหน้าด้วย**ไอคอนถูก SVG inline** ขนาด 18×18px `stroke: #15803D` (stroke-width 2, ไม่มี fill) เว้นจากข้อความ 8px, จัด align บนของบรรทัด
+
+- **ปุ่ม CTA** — เต็มความกว้าง card, สูง 48px, radius 8px, 16px/500, `cursor: pointer`
+  - **Pro (primary):** พื้น primary ตัวขาว · hover `#155E75` · active ขยับลง 1px · disabled พื้น `#94A3B8` + `cursor: not-allowed`
+  - **Starter / Enterprise (secondary):** พื้นขาว ขอบ 1px primary ตัว primary · hover พื้น `#F0FDF4`… ❌ ห้าม — success-bg ใช้กับ success เท่านั้น → hover ใช้ตัว+ขอบเปลี่ยนเป็น primary-hover `#155E75` แทน (ไม่สร้างสีใหม่) · disabled ขอบ+ตัว `#94A3B8`
+  - ป้าย: Starter "เริ่มใช้ฟรี" · Pro "เริ่มใช้งาน Pro" · Enterprise "ติดต่อฝ่ายขาย"
+  - focus-visible: focus ring ตาม token ทุกปุ่ม
+
+- **Spinner** — วงกลม 18px ในปุ่ม, ขอบ 2px, สีตามตัวอักษรปุ่มขณะนั้น (ขาวบน primary / primary บน secondary), หมุน 0.8s linear infinite, แทนที่ข้อความปุ่มชั่วคราว
+
+## States
+
+- **default:** โหมด "รายเดือน" active · Starter "฿0 /เดือน", Pro "฿990 /เดือน", Enterprise "ราคาตามการใช้งาน" · ปุ่มทุกใบ enabled ป้ายตาม Components
+
+- **toggle → รายปี:** JS คูณราคารายเดือน ×12×0.8 แล้วสลับหน่วยเป็น "/ปี" → Starter "฿0 /ปี", Pro "฿9,504 /ปี" (จัดรูปเลขมี comma) · Enterprise ไม่เปลี่ยน · สลับกลับ "รายเดือน" คืนค่าเดิม · สถานะ active ของปุ่ม toggle สลับสีตาม Components · การ์ดที่กด success ไปแล้วคงสถานะ success ไว้ (ไม่ reset)
+
+- **loading (ต่อปุ่มที่ถูกคลิก):** ปุ่ม disabled ทันที + แสดง spinner 18px แทนข้อความ ~800ms (`setTimeout`) · ปุ่มอื่นยังใช้งานได้ปกติ
+
+- **success (ต่อ card, mock ล้วน — ไม่มี navigate/network):**
+  - **Starter / Pro:** เมื่อครบ 800ms ข้อความปุ่มเปลี่ยนเป็น "เลือกแผนแล้ว ✓", พื้นปุ่มเปลี่ยนเป็น success-bg `#F0FDF4`, ตัวอักษร success `#15803D`, ขอบ 1px success, ปุ่มคง disabled (cursor not-allowed) — สถานะจบใน card เดียวกัน
+  - **Enterprise:** เมื่อครบ 800ms ปุ่มกลับเป็นป้ายเดิมแต่คง disabled + แสดงบรรทัดใหม่ใต้ปุ่ม (ห่าง 12px) "ส่งคำขอแล้ว ทีมขายจะติดต่อกลับ" — 14px สี success บนพื้น success-bg, padding 8px 12px, radius 8px
+
+- **error:** ไม่มีในหน้านี้ (ไม่มี network จริง จึงไม่มีทาง fail) — ไม่ต้อง implement banner/field error
+
+- **focus-visible (ทุก interactive: toggle 2 ปุ่ม + CTA 3 ปุ่ม):** `box-shadow: 0 0 0 3px rgba(14,116,144,0.25)` ร่วมกับขอบสี border-focus `#0E7490` · ไม่ใช้ `outline: none` เดี่ยว ๆ
+

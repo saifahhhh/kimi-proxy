@@ -1,0 +1,26 @@
+# kimi-cli config for the proxy's Coder role: pin Kimi K2.7.
+#
+# Passed via `--config-file` by kimi_proxy (config.default_kimi_cli), so it only
+# affects proxy calls — your personal ~/.kimi/config.toml is untouched.
+# NOTE: kimi-cli REPLACES its config with this file (no merge, verified
+# 2026-07-11), so the provider + oauth sections must be repeated here. The
+# oauth block only references the shared credential store — no secrets live
+# in this file.
+
+default_model = "kimi-code/kimi-k2.7"
+
+[models."kimi-code/kimi-k2.7"]
+provider = "managed:kimi-code"
+model = "kimi-k2.7"
+max_context_size = 262144
+capabilities = ["thinking"]
+display_name = "kimi-k2.7"
+
+[providers."managed:kimi-code"]
+type = "kimi"
+base_url = "https://api.kimi.com/coding/v1"
+api_key = ""
+
+[providers."managed:kimi-code".oauth]
+storage = "file"
+key = "oauth/kimi-code"

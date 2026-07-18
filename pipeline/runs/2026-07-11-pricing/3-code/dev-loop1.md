@@ -1,0 +1,614 @@
+```html
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>แผนราคา - Forward Insight</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    :root {
+      --background-start: #0f172a;
+      --background-mid: #1e3a5f;
+      --background-end: #0e7490;
+      --surface: #ffffff;
+      --primary: #0e7490;
+      --primary-hover: #155e75;
+      --primary-disabled: #94a3b8;
+      --text: #0f172a;
+      --muted: #64748b;
+      --muted-on-dark: #cbd5e1;
+      --border: #cbd5e1;
+      --border-focus: #0e7490;
+      --success: #15803d;
+      --success-bg: #f0fdf4;
+
+      --radius-card: 16px;
+      --radius-button: 8px;
+      --radius-badge: 999px;
+
+      --shadow-card: 0 20px 40px rgba(15, 23, 42, 0.25);
+      --focus-ring: 0 0 0 3px rgba(14, 116, 144, 0.25);
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: 'Noto Sans Thai', 'Sarabun', -apple-system, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      background: linear-gradient(
+        135deg,
+        var(--background-start) 0%,
+        var(--background-mid) 50%,
+        var(--background-end) 100%
+      );
+      background-attachment: fixed;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0 0 8px 0;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--muted-on-dark);
+      margin: 0;
+    }
+
+    .billing-toggle {
+      display: inline-flex;
+      background: var(--surface);
+      border-radius: var(--radius-button);
+      padding: 4px;
+      margin-bottom: 32px;
+    }
+
+    .toggle-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.5;
+      height: 40px;
+      padding: 0 16px;
+      border-radius: var(--radius-button);
+      cursor: pointer;
+    }
+
+    .toggle-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .toggle-btn:hover:not(.active) {
+      color: var(--primary);
+    }
+
+    .toggle-btn:focus-visible {
+      outline: none;
+      border: 1px solid var(--border-focus);
+      box-shadow: var(--focus-ring);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+      width: 100%;
+      max-width: 340px;
+    }
+
+    @media (min-width: 900px) {
+      .pricing-grid {
+        grid-template-columns: repeat(3, minmax(0, 340px));
+        max-width: 1068px;
+        align-items: stretch;
+      }
+    }
+
+    .pricing-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      padding: 32px;
+      width: 100%;
+    }
+
+    @media (max-width: 360px) {
+      .pricing-card {
+        padding: 20px;
+      }
+    }
+
+    .pricing-card.pro {
+      border: 2px solid var(--primary);
+    }
+
+    .recommended-badge {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--primary);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.5;
+      padding: 4px 12px;
+      border-radius: var(--radius-badge);
+      white-space: nowrap;
+    }
+
+    .plan-name {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.5;
+      color: var(--text);
+      margin: 0 0 12px 0;
+    }
+
+    .pricing-card.pro .plan-name {
+      margin-top: 12px;
+    }
+
+    .price-block {
+      margin-bottom: 16px;
+      min-height: 48px;
+      display: flex;
+      align-items: baseline;
+    }
+
+    .price-value {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text);
+    }
+
+    .price-unit {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    .price-custom {
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      border: 0;
+      margin: 0 0 16px 0;
+    }
+
+    .feature-list {
+      list-style: none;
+      margin: 0 0 24px 0;
+      padding: 0;
+      flex: 1 0 auto;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: var(--text);
+    }
+
+    .feature-item + .feature-item {
+      margin-top: 12px;
+    }
+
+    .feature-icon {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      margin-top: 3px;
+    }
+
+    .cta-button {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 48px;
+      border-radius: var(--radius-button);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.5;
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease,
+        color 0.15s ease, transform 0.05s ease;
+    }
+
+    .cta-button:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+
+    .cta-button.primary {
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary);
+    }
+
+    .cta-button.primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .cta-button.primary:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .cta-button.primary:disabled:not([data-state='success']) {
+      background: var(--primary-disabled);
+      border-color: var(--primary-disabled);
+      color: #ffffff;
+      cursor: not-allowed;
+    }
+
+    .cta-button.secondary {
+      background: #ffffff;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .cta-button.secondary:hover:not(:disabled) {
+      color: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .cta-button.secondary:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .cta-button.secondary:disabled:not([data-state='success']) {
+      color: var(--primary-disabled);
+      border-color: var(--primary-disabled);
+      cursor: not-allowed;
+    }
+
+    .cta-button[data-state='success']:disabled {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid var(--success);
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .success-message {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: var(--radius-button);
+      background: var(--success-bg);
+      color: var(--success);
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .success-message[hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="page-header">
+      <h1 class="page-title">แผนราคา</h1>
+      <p class="page-subtitle">
+        เลือกแผนที่เหมาะกับทีมของคุณ เริ่มฟรี อัปเกรดได้ทุกเมื่อ
+      </p>
+    </header>
+
+    <div class="billing-toggle" role="group" aria-label="เลือกรอบการเรียกเก็บเงิน">
+      <button
+        id="billing-monthly"
+        class="toggle-btn active"
+        type="button"
+        aria-pressed="true"
+      >
+        รายเดือน
+      </button>
+      <button
+        id="billing-yearly"
+        class="toggle-btn"
+        type="button"
+        aria-pressed="false"
+      >
+        รายปี (ลด 20%)
+      </button>
+    </div>
+
+    <section class="pricing-grid">
+      <article
+        class="pricing-card starter"
+        data-plan="starter"
+        data-monthly="0"
+        data-yearly="0"
+      >
+        <h2 class="plan-name">Starter</h2>
+        <div class="price-block">
+          <span class="price-value">฿0</span>
+          <span class="price-unit"> /เดือน</span>
+        </div>
+        <hr class="divider" />
+        <ul class="feature-list">
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ผู้ใช้ 1 คน
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            แดชบอร์ด 1 ชุด
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ประวัติข้อมูลย้อนหลัง 7 วัน
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ซัพพอร์ตผ่านอีเมล
+          </li>
+        </ul>
+        <button class="cta-button secondary" type="button">
+          <span class="btn-text">เริ่มใช้ฟรี</span>
+        </button>
+        <div class="success-message" hidden></div>
+      </article>
+
+      <article
+        class="pricing-card pro"
+        data-plan="pro"
+        data-monthly="990"
+        data-yearly="9504"
+      >
+        <span class="recommended-badge">แนะนำ</span>
+        <h2 class="plan-name">Pro</h2>
+        <div class="price-block">
+          <span class="price-value">฿990</span>
+          <span class="price-unit"> /เดือน</span>
+        </div>
+        <hr class="divider" />
+        <ul class="feature-list">
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ผู้ใช้สูงสุด 10 คน
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            แดชบอร์ดไม่จำกัด
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ประวัติข้อมูลย้อนหลัง 1 ปี
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ส่งออกรายงาน PDF/Excel
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ซัพพอร์ตแบบเร่งด่วน
+          </li>
+        </ul>
+        <button class="cta-button primary" type="button">
+          <span class="btn-text">เริ่มใช้งาน Pro</span>
+        </button>
+        <div class="success-message" hidden></div>
+      </article>
+
+      <article
+        class="pricing-card enterprise"
+        data-plan="enterprise"
+      >
+        <h2 class="plan-name">Enterprise</h2>
+        <div class="price-block">
+          <span class="price-custom">ราคาตามการใช้งาน</span>
+        </div>
+        <hr class="divider" />
+        <ul class="feature-list">
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ผู้ใช้ไม่จำกัด
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ทุกฟีเจอร์ของ Pro
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            SSO และสิทธิ์ตามบทบาท
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            SLA รับประกัน 99.9%
+          </li>
+          <li class="feature-item">
+            <svg class="feature-icon" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+              <path d="M3 9L7.5 13.5L15 4.5" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            ผู้ดูแลบัญชีเฉพาะทีม
+          </li>
+        </ul>
+        <button class="cta-button secondary" type="button">
+          <span class="btn-text">ติดต่อฝ่ายขาย</span>
+        </button>
+        <div class="success-message" hidden></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const monthlyBtn = document.getElementById('billing-monthly');
+      const yearlyBtn = document.getElementById('billing-yearly');
+      const cards = document.querySelectorAll('.pricing-card');
+
+      const formatNumber = (value) => {
+        return new Intl.NumberFormat('th-TH').format(value);
+      };
+
+      const updatePrices = (isYearly) => {
+        cards.forEach((card) => {
+          const plan = card.dataset.plan;
+          if (plan === 'enterprise') return;
+
+          const priceValueEl = card.querySelector('.price-value');
+          const priceUnitEl = card.querySelector('.price-unit');
+          const monthly = Number(card.dataset.monthly);
+          const yearly = Number(card.dataset.yearly);
+          const value = isYearly ? yearly : monthly;
+
+          priceValueEl.textContent = '฿' + formatNumber(value);
+          priceUnitEl.textContent = isYearly ? ' /ปี' : ' /เดือน';
+        });
+      };
+
+      const setBilling = (isYearly) => {
+        monthlyBtn.classList.toggle('active', !isYearly);
+        yearlyBtn.classList.toggle('active', isYearly);
+        monthlyBtn.setAttribute('aria-pressed', String(!isYearly));
+        yearlyBtn.setAttribute('aria-pressed', String(isYearly));
+        updatePrices(isYearly);
+      };
+
+      monthlyBtn.addEventListener('click', () => setBilling(false));
+      yearlyBtn.addEventListener('click', () => setBilling(true));
+
+      document.querySelectorAll('.cta-button').forEach((button) => {
+        button.addEventListener('click', function handleClick() {
+          if (this.disabled || this.dataset.state === 'success') return;
+
+          const card = this.closest('.pricing-card');
+          const plan = card.dataset.plan;
+          const textEl = this.querySelector('.btn-text');
+          const originalText = textEl.textContent;
+
+          this.disabled = true;
+          this.dataset.state = 'loading';
+          textEl.textContent = '';
+
+          const spinner = document.createElement('span');
+          spinner.className = 'spinner';
+          spinner.setAttribute('aria-hidden', 'true');
+          this.appendChild(spinner);
+
+          setTimeout(() => {
+            spinner.remove();
+            this.dataset.state = 'success';
+
+            if (plan === 'enterprise') {
+              textEl.textContent = originalText;
+              const messageEl = card.querySelector('.success-message');
+              messageEl.textContent = 'ส่งคำขอแล้ว ทีมขายจะติดต่อกลับ';
+              messageEl.hidden = false;
+            } else {
+              textEl.textContent = 'เลือกแผนแล้ว ✓';
+            }
+          }, 800);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
+```
+
+To resume this session: kimi -r 534a3cd2-cf1e-4d35-ab07-d7c6f5e206d8
+

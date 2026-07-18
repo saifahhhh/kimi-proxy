@@ -1,0 +1,10 @@
+- AC: มีชื่อแผน Starter => Starter
+- AC: มีชื่อแผน Pro => >Pro<
+- AC: มีชื่อแผน Enterprise => Enterprise
+- AC: มีปุ่ม CTA อย่างน้อยหนึ่งปุ่ม => <button
+- AC: มี badge แผนแนะนำ => แนะนำ
+- AC: ใช้สี primary ตาม design system => #0E7490
+- AC: มี gradient พื้นหลัง => linear-gradient
+- AC: โหลดฟอนต์ Noto Sans Thai => Noto\+?Sans\+?Thai
+- AC: มี toggle รายเดือน/รายปี => รายปี
+- AC: responsive มี viewport meta => name=["']?viewport
