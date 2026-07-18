@@ -118,6 +118,18 @@ Returns `200`.
   vault's `tasks/handoff.md`. Every later coding turn then receives it as a
   priority-1 `[HANDOFF]` section whose steps override the prose `[PLAN]`, so
   the Coder executes instead of re-interpreting. A new plan overwrites it.
+- **1 oo7 task = 1 thread of memory.** With a `task_root`, the plan is also
+  thread-scoped: it lands as `<task_root>/PLAN.md` (not the vault's global
+  `tasks/current.md`), and task-scoped PLAN/HANDOFF **shadow** the vault's
+  global ones in the context — parallel tasks can no longer clobber or leak
+  into each other. The vault stays the shared long-term brain
+  (project/decisions/notes); the task folder holds the thread's working state.
+- **Explicit remember (`จำ:` / `จำไว้:` / `remember:`).** A prompt starting
+  with a remember directive is written straight into the vault's `notes/` by
+  the proxy itself — deterministic, no LLM call, effective on the very next
+  request (title = first line; Thai filenames work). Correction capture now
+  also triggers on Thai correction phrases (ไม่ใช่ / ผิดแล้ว / เข้าใจผิด / …),
+  so the self-learning hook fires in the language the team actually uses.
 - **Coding / Question** loads the relevant notes (always including the current
   plan) and answers with the Coder.
 - **Direct** models bypass the vault entirely.

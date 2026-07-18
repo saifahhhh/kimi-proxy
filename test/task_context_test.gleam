@@ -84,6 +84,23 @@ pub fn load_blocks_handoff_priority_one_no_taskref_test() {
   list.any(blocks, fn(b) { b.label == "TASKREF:HANDOFF" }) |> should.be_false
 }
 
+pub fn load_blocks_plan_priority_one_no_taskref_test() {
+  let root = tmp_task("plan")
+  let assert Ok(_) = simplifile.write(root <> "/PLAN.md", "the plan body")
+  let blocks = task_context.load_blocks(root)
+  let assert Ok(plan) = list.find(blocks, fn(b) { b.label == "PLAN" })
+  plan.priority |> should.equal(1)
+  plan.content |> should.equal("the plan body")
+  list.any(blocks, fn(b) { b.label == "TASKREF:PLAN" }) |> should.be_false
+}
+
+pub fn write_plan_roundtrip_test() {
+  let root = tmp_task("plan_write")
+  let assert Ok(_) = task_context.write_plan(root, "# plan\n\nphase 1\n")
+  let assert Ok(content) = simplifile.read(root <> "/PLAN.md")
+  string.contains(content, "phase 1") |> should.be_true
+}
+
 pub fn write_handoff_roundtrip_test() {
   let root = tmp_task("handoff_write")
   let assert Ok(_) =

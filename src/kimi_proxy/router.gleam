@@ -15,9 +15,10 @@ import kimi_proxy/context
 import kimi_proxy/memory.{type Note}
 import kimi_proxy/provider.{type LlmError, Coder, Planner}
 import kimi_proxy/task_context
+import kimi_proxy/train
 import kimi_proxy/types.{
-  type Intent, type Task, type Turn, Auto, Coding, DirectModel, ForceRole,
-  Planning, Question, Task,
+  type ContextBlock, type Intent, type Task, type Turn, Auto, Coding,
+  DirectModel, ForceRole, Planning, Question, Task,
 }
 
 const planning_keywords = ["design", "architect", "plan", "structure", "spec"]
@@ -32,7 +33,19 @@ const coding_keywords = [
 const correction_keywords = [
   "wrong", "actually", "instead", "don't do that", "do not do that",
   "stop doing", "incorrect", "mistake", "not what i asked", "should have",
+  // Thai — the team corrects in Thai; the original English-only list left the
+  // whole capture hook asleep for real usage. Same false-positive contract:
+  // a wrong trigger only appends an instruction the model may ignore.
+  "ไม่ใช่", "ผิดแล้ว", "ไม่ถูกต้อง", "ที่จริงแล้ว", "จริงๆแล้ว", "จริง ๆ แล้ว",
+  "เข้าใจผิด", "อย่าทำแบบนั้น", "เลิกทำ", "ไม่ได้ขอ", "เอาใหม่", "แก้ใหม่", "ทำใหม่",
 ]
+
+// --- explicit remember (สั่งให้จำ) -------------------------------------------
+// A prompt starting with a remember directive is persisted straight into the
+// vault by the proxy — deterministic, instant, no LLM call (golden rule:
+// control stays in Gleam). The note text is exactly what the user typed.
+
+const remember_prefixes = ["จำ:", "จำไว้:", "remember:"]
 
 // IMPORTANT: ask for the plan as plain markdown and explicitly forbid writing
 // files / using tools. Mentioning a filename here made the Claude CLI try its
@@ -103,12 +116,68 @@ pub fn handle(cfg: Config, task: Task) -> Result(Handled, LlmError) {
       |> result.map(fn(ans) {
         Handled(ans.content, "direct", "direct", ans.via)
       })
-    _ -> {
-      let index = cache.resolve_index(cfg)
-      let task = Task(..task, intent: classify(task))
-      case task.intent {
-        Planning -> handle_planning(cfg, index, task)
-        _ -> handle_coding(cfg, index, task)
+    _ ->
+      case remember_body(task.user_prompt) {
+        Ok(body) -> Ok(handle_remember(cfg, body))
+        Error(Nil) -> {
+          let index = cache.resolve_index(cfg)
+          let task = Task(..task, intent: classify(task))
+          case task.intent {
+            Planning -> handle_planning(cfg, index, task)
+            _ -> handle_coding(cfg, index, task)
+          }
+        }
+      }
+  }
+}
+
+/// The text after a remember directive ("จำ: …" / "remember: …"), or Error
+/// when the prompt is not a remember command. Pure — public for tests.
+pub fn remember_body(prompt: String) -> Result(String, Nil) {
+  let trimmed = string.trim(prompt)
+  let low = string.lowercase(trimmed)
+  remember_prefixes
+  |> list.find_map(fn(prefix) {
+    case string.starts_with(low, prefix) {
+      True ->
+        Ok(string.trim(string.drop_start(trimmed, string.length(prefix))))
+      False -> Error(Nil)
+    }
+  })
+}
+
+/// Save an explicit remember note into `notes/` (title = first line; the
+/// filename reuses train.note_path, so Thai titles keep Thai filenames and
+/// path traversal stays impossible). Replies with where it landed — the whole
+/// turn never touches an LLM.
+fn handle_remember(cfg: Config, body: String) -> Handled {
+  let reply = fn(text) { Handled(text, "remember", "proxy", "vault") }
+  case body, cfg.enable_memory_write {
+    "", _ -> reply("nothing to remember — ใช้: จำ: <สิ่งที่อยากให้จำ>")
+    _, False ->
+      reply("vault writes are disabled (ENABLE_MEMORY_WRITE=false) — not saved")
+    _, True -> {
+      let title = first_line(body)
+      case train.note_path("notes", title) {
+        Error(msg) -> reply("could not save: " <> msg)
+        Ok(rel) -> {
+          let content =
+            "---\ntitle: "
+            <> title
+            <> "\nupdated: "
+            <> birl.to_naive_date_string(birl.now())
+            <> "\n---\n\n"
+            <> string.trim(body)
+            <> "\n"
+          case memory.write_note(cfg, rel, content) {
+            Error(e) -> reply("could not save: " <> e)
+            Ok(_) -> {
+              let _ = memory.rebuild_index(cfg)
+              log_session(cfg, "[REMEMBER] " <> rel)
+              reply("✓ จำแล้ว → " <> rel <> " (มีผลทันทีทุก request ถัดไป)")
+            }
+          }
+        }
       }
     }
   }
@@ -153,7 +222,7 @@ fn handle_planning(
 ) -> Result(Handled, LlmError) {
   let notes = read_notes(cfg, memory.select_relevant(index, task, 6))
   let blocks =
-    list.append(
+    merge_blocks(
       task_context.load_blocks(task.task_root),
       context.build_blocks(notes, task),
     )
@@ -180,7 +249,7 @@ fn handle_coding(
 ) -> Result(Handled, LlmError) {
   let notes = read_notes(cfg, memory.select_relevant(index, task, 8))
   let blocks =
-    list.append(
+    merge_blocks(
       task_context.load_blocks(task.task_root),
       context.build_blocks(notes, task),
     )
@@ -198,17 +267,49 @@ fn handle_coding(
   Ok(Handled(answer, intent_name(task.intent), "coder", ans.via))
 }
 
-/// Persist a plan as `tasks/current.md` and refresh the index (best-effort: a
-/// memory write failure never fails the response — spec §12).
+/// Persist a plan where the coder will find it (best-effort: a memory write
+/// failure never fails the response — spec §12). With an oo7 task the plan is
+/// THREAD-SCOPED — `<task_root>/PLAN.md` next to TASK.md, so parallel tasks
+/// stop clobbering one global slot; without a task it stays the vault's
+/// `tasks/current.md` as before (1 task = 1 thread of memory).
 fn remember_plan(cfg: Config, task: Task, plan: String) -> Nil {
   case cfg.enable_memory_write {
     False -> Nil
     True -> {
-      let _ = memory.write_note(cfg, "tasks/current.md", to_current_md(plan))
-      let _ = memory.rebuild_index(cfg)
+      case task.task_root != "" {
+        True -> {
+          let _ = task_context.write_plan(task.task_root, to_current_md(plan))
+          Nil
+        }
+        False -> {
+          let _ =
+            memory.write_note(cfg, "tasks/current.md", to_current_md(plan))
+          let _ = memory.rebuild_index(cfg)
+          Nil
+        }
+      }
       log_session(cfg, "[PLAN] " <> first_line(task.user_prompt))
     }
   }
+}
+
+/// Task-scoped blocks shadow their vault twins: when the task folder carries
+/// its own PLAN / HANDOFF, the vault's global `tasks/current.md` /
+/// `tasks/handoff.md` (possibly another thread's) are dropped from the
+/// context, so threads can never contaminate each other.
+fn merge_blocks(
+  task_blocks: List(ContextBlock),
+  note_blocks: List(ContextBlock),
+) -> List(ContextBlock) {
+  let shadowed =
+    ["PLAN", "HANDOFF"]
+    |> list.filter(fn(label) {
+      list.any(task_blocks, fn(b) { b.label == label })
+    })
+  list.append(
+    task_blocks,
+    list.filter(note_blocks, fn(b) { !list.contains(shadowed, b.label) }),
+  )
 }
 
 fn log_session(cfg: Config, line: String) -> Nil {

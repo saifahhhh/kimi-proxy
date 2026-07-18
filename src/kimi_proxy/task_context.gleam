@@ -30,10 +30,10 @@ import kimi_proxy/tokens
 import kimi_proxy/types.{type ContextBlock, ContextBlock}
 import simplifile
 
-/// Filenames never picked up by the recursive scan: the first three are loaded
+/// Filenames never picked up by the recursive scan: the first four are loaded
 /// separately with their own labels, the rest are their oo7 symlink twins.
 const scan_excluded = [
-  "TASK.md", "AGENTS.md", "HANDOFF.md", "CLAUDE.md", "GEMINI.md",
+  "TASK.md", "PLAN.md", "AGENTS.md", "HANDOFF.md", "CLAUDE.md", "GEMINI.md",
 ]
 
 /// How deep the scan may recurse below the task root. Real tasks are 3-4
@@ -49,8 +49,10 @@ pub fn load_blocks(task_root: String) -> List(ContextBlock) {
     True ->
       list.flatten([
         read_block(task_root, "TASK.md", "TASK", 1),
-        // the planner→coder handoff written by router.remember_handoff —
-        // priority 1 like the plan: it is the operative instruction set
+        // the thread-scoped plan + planner→coder handoff written by
+        // router.remember_plan / remember_handoff — both priority 1: they are
+        // the operative instruction set for this task's thread
+        read_block(task_root, "PLAN.md", "PLAN", 1),
         read_block(task_root, "HANDOFF.md", "HANDOFF", 1),
         read_block(task_root, "AGENTS.md", "AGENTS", 2),
         list.flat_map(scan(task_root, "", max_depth), fn(rel) {
@@ -159,14 +161,28 @@ fn exists(path: String) -> Bool {
   }
 }
 
-/// Write the proxy-owned `HANDOFF.md` into an oo7 task folder (atomic
-/// tmp+rename, like memory.write_note). Refuses when the folder is not a task
-/// (no TASK.md) so a bogus task_root can never scatter files.
+/// Write the proxy-owned `HANDOFF.md` into an oo7 task folder.
 pub fn write_handoff(task_root: String, content: String) -> Result(Nil, String) {
+  write_doc(task_root, "HANDOFF.md", content)
+}
+
+/// Write the proxy-owned, thread-scoped `PLAN.md` into an oo7 task folder.
+pub fn write_plan(task_root: String, content: String) -> Result(Nil, String) {
+  write_doc(task_root, "PLAN.md", content)
+}
+
+/// Shared writer (atomic tmp+rename, like memory.write_note). Refuses when
+/// the folder is not a task (no TASK.md) so a bogus task_root can never
+/// scatter files.
+fn write_doc(
+  task_root: String,
+  name: String,
+  content: String,
+) -> Result(Nil, String) {
   case task_root != "" && is_file(task_root <> "/TASK.md") {
     False -> Error("not an oo7 task folder: " <> task_root)
     True -> {
-      let full = task_root <> "/HANDOFF.md"
+      let full = task_root <> "/" <> name
       let tmp = full <> ".tmp"
       case simplifile.write(to: tmp, contents: content) {
         Error(e) -> Error(simplifile.describe_error(e))

@@ -218,11 +218,14 @@ pub fn handle_planning_writes_handoff_into_task_root_test() {
   let assert Ok(handoff) = simplifile.read(root <> "/HANDOFF.md")
   string.contains(handoff, "objective: ship X") |> should.be_true
 
-  // tasks/current.md keeps the cleaned plan only
-  let assert Ok(current) =
-    simplifile.read(cfg.vault_path <> "/tasks/current.md")
-  string.contains(current, h_start) |> should.be_false
-  string.contains(current, "The plan: do X in two phases.") |> should.be_true
+  // the plan is thread-scoped: PLAN.md next to TASK.md, marker-free — and
+  // the vault's global tasks/current.md slot is left untouched
+  let assert Ok(plan_doc) = simplifile.read(root <> "/PLAN.md")
+  string.contains(plan_doc, "The plan: do X in two phases.") |> should.be_true
+  string.contains(plan_doc, h_start) |> should.be_false
+  simplifile.read(cfg.vault_path <> "/tasks/current.md")
+  |> result.is_error
+  |> should.be_true
 }
 
 pub fn handle_planning_handoff_vault_fallback_test() {
@@ -250,6 +253,76 @@ pub fn handle_coding_receives_handoff_section_test() {
     router.handle(cfg, task_in(Auto, "write the code", root))
   string.contains(out, "[HANDOFF]") |> should.be_true
   string.contains(out, "OPEN_A_PY") |> should.be_true
+}
+
+// --- explicit remember (จำ:) + thread-scoped memory --------------------------
+
+pub fn remember_body_detects_directives_test() {
+  router.remember_body("จำ: ใช้ bcrypt เสมอ")
+  |> should.equal(Ok("ใช้ bcrypt เสมอ"))
+  router.remember_body("  Remember: always use uv  ")
+  |> should.equal(Ok("always use uv"))
+  router.remember_body("write a login function") |> should.equal(Error(Nil))
+}
+
+pub fn handle_remember_writes_note_without_llm_test() {
+  let cfg =
+    tmp_cfg("remember", ["/bin/sh", "-c", "echo CODER_RAN"], [
+      "/bin/sh",
+      "-c",
+      "echo PLANNER_RAN",
+    ])
+  let assert Ok(router.Handled(out, intent, _, _)) =
+    router.handle(cfg, task_with(Auto, "จำ: ทีมใช้ pnpm เท่านั้น ห้าม npm"))
+  intent |> should.equal("remember")
+  string.contains(out, "notes/") |> should.be_true
+  // no LLM was consulted — the proxy answered by itself
+  string.contains(out, "CODER_RAN") |> should.be_false
+  string.contains(out, "PLANNER_RAN") |> should.be_false
+  // the note holds exactly what was said, and the index was rebuilt
+  let assert Ok([file]) = simplifile.read_directory(cfg.vault_path <> "/notes")
+  let assert Ok(note) = simplifile.read(cfg.vault_path <> "/notes/" <> file)
+  string.contains(note, "ทีมใช้ pnpm เท่านั้น ห้าม npm") |> should.be_true
+  let assert Ok(index) = simplifile.read(cfg.vault_path <> "/_INDEX.md")
+  string.contains(index, "notes/") |> should.be_true
+}
+
+pub fn handle_remember_empty_body_saves_nothing_test() {
+  let cfg =
+    tmp_cfg("remember_empty", ["/bin/sh", "-c", "echo X"], [
+      "/bin/sh",
+      "-c",
+      "echo Y",
+    ])
+  let assert Ok(router.Handled(out, _, _, _)) =
+    router.handle(cfg, task_with(Auto, "จำ:"))
+  string.contains(out, "nothing to remember") |> should.be_true
+  simplifile.read_directory(cfg.vault_path <> "/notes")
+  |> result.is_error
+  |> should.be_true
+}
+
+pub fn is_correction_detects_thai_test() {
+  router.is_correction("ไม่ใช่ ต้องใช้ bcrypt") |> should.be_true
+  router.is_correction("ผิดแล้ว แก้ใหม่ทั้งไฟล์") |> should.be_true
+  router.is_correction("เข้าใจผิดนะ อันนี้คือ Svelte 5") |> should.be_true
+  router.is_correction("เขียนฟังก์ชัน login ให้หน่อย") |> should.be_false
+}
+
+pub fn handle_coding_task_plan_shadows_vault_plan_test() {
+  // a task-scoped PLAN.md wins; the vault's global current.md (possibly
+  // another thread's plan) must not leak into this thread's context
+  let cfg = tmp_cfg("plan_shadow", echo_prompt, echo_prompt)
+  let root = tmp_task_dir("plan_shadow")
+  let assert Ok(_) = simplifile.write(root <> "/PLAN.md", "TASK_SCOPED_PLAN")
+  let assert Ok(_) =
+    simplifile.create_directory_all(cfg.vault_path <> "/tasks")
+  let assert Ok(_) =
+    simplifile.write(cfg.vault_path <> "/tasks/current.md", "GLOBAL_PLAN")
+  let assert Ok(router.Handled(out, _, _, _)) =
+    router.handle(cfg, task_in(Auto, "write the code", root))
+  string.contains(out, "TASK_SCOPED_PLAN") |> should.be_true
+  string.contains(out, "GLOBAL_PLAN") |> should.be_false
 }
 
 pub fn handle_planning_without_block_leaves_no_handoff_test() {
